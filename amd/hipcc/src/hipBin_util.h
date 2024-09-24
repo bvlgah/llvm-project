@@ -144,9 +144,8 @@ struct SystemCmdOut {
 class HipBinUtil {
  public:
   static HipBinUtil* getInstance() {
-      if (!instance)
-      instance = new HipBinUtil;
-      return instance;
+    static HipBinUtil instace;
+    return &instace;
   }
   virtual ~HipBinUtil();
   // Common helper functions
@@ -171,10 +170,7 @@ class HipBinUtil {
  private:
   HipBinUtil() {}
   vector<string> tmpFiles_;
-  static HipBinUtil *instance;
 };
-
-HipBinUtil *HipBinUtil::instance = 0;
 
 // deleting temp files created
 HipBinUtil::~HipBinUtil() {

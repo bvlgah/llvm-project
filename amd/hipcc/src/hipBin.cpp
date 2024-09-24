@@ -24,6 +24,7 @@ THE SOFTWARE.
 #include "hipBin_amd.h"
 #include "hipBin_nvidia.h"
 #include <iostream>
+#include <memory>
 #include <vector>
 #include <string>
 
@@ -39,12 +40,12 @@ class HipBin {
   HipBinUtil* hipBinUtilPtr_;
   vector<HipBinBase*> hipBinBasePtrs_;
   vector<PlatformInfo> platformVec_;
-  HipBinBase* hipBinNVPtr_;
-  HipBinBase* hipBinAMDPtr_;
+  std::unique_ptr<HipBinBase> hipBinNVPtr_;
+  std::unique_ptr<HipBinBase> hipBinAMDPtr_;
 
  public:
   HipBin();
-  ~HipBin();
+  ~HipBin() = default;
   vector<HipBinBase*>& getHipBinPtrs();
   vector<PlatformInfo>& getPlaformInfo();
   void executeHipBin(string filename, int argc, char* argv[]);
@@ -58,20 +59,20 @@ class HipBin {
 
 HipBin::HipBin() {
   hipBinUtilPtr_ = hipBinUtilPtr_->getInstance();
-  hipBinNVPtr_ = new HipBinNvidia();
-  hipBinAMDPtr_ = new HipBinAmd();
+  hipBinNVPtr_ = std::make_unique<HipBinNvidia>();
+  hipBinAMDPtr_ = std::make_unique<HipBinAmd>();
   bool platformDetected = false;
   if (hipBinAMDPtr_->detectPlatform()) {
     // populates the struct with AMD info
     const PlatformInfo& platformInfo = hipBinAMDPtr_->getPlatformInfo();
     platformVec_.push_back(platformInfo);
-    hipBinBasePtrs_.push_back(hipBinAMDPtr_);
+    hipBinBasePtrs_.push_back(hipBinAMDPtr_.get());
     platformDetected = true;
   } else if (hipBinNVPtr_->detectPlatform()) {
     // populates the struct with Nvidia info
     const PlatformInfo& platformInfo = hipBinNVPtr_->getPlatformInfo();
     platformVec_.push_back(platformInfo);
-    hipBinBasePtrs_.push_back(hipBinNVPtr_);
+    hipBinBasePtrs_.push_back(hipBinNVPtr_.get());
     platformDetected = true;
   }
   // if no device is detected, then it is defaulted to AMD
@@ -80,18 +81,8 @@ HipBin::HipBin() {
     // populates the struct with AMD info
     const PlatformInfo& platformInfo = hipBinAMDPtr_->getPlatformInfo();
     platformVec_.push_back(platformInfo);
-    hipBinBasePtrs_.push_back(hipBinAMDPtr_);
+    hipBinBasePtrs_.push_back(hipBinAMDPtr_.get());
   }
-}
-
-HipBin::~HipBin() {
-  delete hipBinNVPtr_;
-  delete hipBinAMDPtr_;
-  // clearing the vector so no one accesses the pointers
-  hipBinBasePtrs_.clear();
-  // clearing the platform vector as the pointers are deleted
-  platformVec_.clear();
-  delete hipBinUtilPtr_;
 }
 
 vector<PlatformInfo>& HipBin::getPlaformInfo() {
